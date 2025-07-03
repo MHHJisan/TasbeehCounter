@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#eef2f3",
-    paddingTop: 40,
+    paddingTop: 20,
     alignItems: "center",
     paddingHorizontal: 20,
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#1e3a8a",
-    marginBottom: 10,
+    marginBottom: 20,
     backgroundColor: "#dbeafe",
     paddingVertical: 8,
     paddingHorizontal: 25,
