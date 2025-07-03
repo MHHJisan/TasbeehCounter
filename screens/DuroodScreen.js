@@ -95,7 +95,9 @@ const DuroodScreen = () => {
       </View>
 
       <Text style={styles.note}>
-        ✨ This counter resets at midnight (12:00 AM). Keep sending blessings!
+        ✨ This counter resets at midnight (12:00 AM). Keep sending blessings
+        upon the Prophet
+        <Text style={{ fontSize: 14, color: "#065f46" }}> ﷺ </Text>!
       </Text>
     </View>
     // </ImageBackground>
