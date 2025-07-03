@@ -7,7 +7,7 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { Audio } from "expo-av";
+import { Audio } from "expo-audio";
 import ConfettiCannon from "react-native-confetti-cannon";
 import {
   useSafeAreaInsets,
