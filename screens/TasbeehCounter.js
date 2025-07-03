@@ -69,7 +69,7 @@ const TasbeehCounter = () => {
           if (countRef.current >= parseInt(targetCount, 10)) {
             setShowConfetti(true);
             playBlastSound();
-            Alert.alert("Congratulations!", "You reached your Tasbeeh goal!");
+            Alert.alert("MashaAllah..", "You reached your Tasbeeh goal!");
           } else {
             Alert.alert(
               "Time Up!",
