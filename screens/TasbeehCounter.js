@@ -6,29 +6,45 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
-  Button,
 } from "react-native";
-
+import { Audio } from "expo-av";
+import ConfettiCannon from "react-native-confetti-cannon";
 import {
-  SafeAreaView,
   useSafeAreaInsets,
+  SafeAreaView,
 } from "react-native-safe-area-context";
 
-const TasbeehCounter = ({ navigation }) => {
+const TasbeehCounter = () => {
   const [targetCount, setTargetCount] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [count, setCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const timerRef = useRef(null);
-
   const countRef = useRef(count);
-
+  const soundRef = useRef(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     countRef.current = count;
   }, [count]);
+
+  const playBlastSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require("../assets/blast-sound.mp3")
+      );
+      await sound.playAsync();
+    } catch (error) {
+      console.log("🔴 Sound playback error:", error?.message || error);
+      Alert.alert(
+        "Sound Error",
+        "Could not play sound. Check console for details."
+      );
+    }
+  };
 
   const startCounting = () => {
     if (!targetCount || !durationMinutes) {
@@ -43,20 +59,24 @@ const TasbeehCounter = ({ navigation }) => {
     const totalSeconds = parseInt(durationMinutes, 10) * 60;
     setTimeLeft(totalSeconds);
     setIsRunning(true);
+    setShowConfetti(false);
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
+        if (prev <= 1 || countRef.current >= parseInt(targetCount, 10)) {
+          clearInterval(timerRef.current);
           setIsRunning(false);
-          if (countRef.current < parseInt(targetCount, 10)) {
+          if (countRef.current >= parseInt(targetCount, 10)) {
+            setShowConfetti(true);
+            playBlastSound();
+            Alert.alert("Congratulations!", "You reached your Tasbeeh goal!");
+          } else {
             Alert.alert(
               "Time Up!",
               `You reached only ${countRef.current} out of ${targetCount}.`
             );
-          } else {
-            Alert.alert("Success!", "You reached your goal!");
           }
+          return 0;
         }
         return prev - 1;
       });
@@ -66,6 +86,7 @@ const TasbeehCounter = ({ navigation }) => {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (soundRef.current) soundRef.current.unloadAsync();
     };
   }, []);
 
@@ -82,11 +103,12 @@ const TasbeehCounter = ({ navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
-      <View style={[styles.container, { paddingBottom: insets.bottom + 80 }]}>
+      <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
         <Text style={styles.header}>Tasbeeh Counter with Alarm</Text>
         <Text style={styles.title}>Set Your Tasbeeh Goal</Text>
+
         <TextInput
-          placeholder="Target Count (e.g. 500) times"
+          placeholder="Target Count (e.g. 500)"
           value={targetCount}
           onChangeText={setTargetCount}
           keyboardType="numeric"
@@ -112,11 +134,9 @@ const TasbeehCounter = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.info}>
-          <Text style={styles.label}>Count: {count} times</Text>
-          <Text style={styles.label}>Target: {targetCount} times</Text>
-          <Text style={styles.label}>
-            Time Left: {formatTime(timeLeft)} minutes
-          </Text>
+          <Text style={styles.label}>Count: {count}</Text>
+          <Text style={styles.label}>Target: {targetCount}</Text>
+          <Text style={styles.label}>Time Left: {formatTime(timeLeft)}</Text>
         </View>
 
         {isRunning && (
@@ -131,44 +151,42 @@ const TasbeehCounter = ({ navigation }) => {
           </View>
         )}
 
-        {/* <View style={{ marginTop: 40 }}>
-        <Button
-          title="Go to Dhikr Screen"
-          onPress={() => navigation.navigate("Dhikr")}
-        />
-      </View> */}
+        {showConfetti && (
+          <ConfettiCannon
+            count={150}
+            origin={{ x: -10, y: 0 }}
+            fadeOut={true}
+            onAnimationEnd={() => setShowConfetti(false)}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  // your existing styles here
   container: {
     flex: 1,
     backgroundColor: "#eef2f3",
-    paddingTop: 10,
+    // paddingTop: 20,
     paddingHorizontal: 20,
-    paddingBottom: 100,
   },
   header: {
     fontSize: 28,
     fontWeight: "800",
     color: "#4B0082",
     textAlign: "center",
-    marginTop: 30,
-    marginBottom: 25,
+    // marginTop: 20,
+    marginBottom: 20,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
     letterSpacing: 1,
-    fontFamily: "System",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    marginTop: 10,
-    marginBottom: 30,
+    marginVertical: 10,
     textAlign: "center",
   },
   input: {
@@ -185,14 +203,31 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: "center",
   },
-  startButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
-  info: { alignItems: "center", marginVertical: 30 },
-  label: { fontSize: 18, marginVertical: 5 },
-  tasbeehContainer: { alignItems: "center", marginTop: 30 },
-  tasbeehLabel: { fontSize: 16, marginBottom: 10, color: "#333" },
+  startButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  info: {
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  label: {
+    fontSize: 18,
+    marginVertical: 5,
+  },
+  tasbeehContainer: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+  tasbeehLabel: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: "#333",
+  },
   tasbeehButton: {
-    width: 150,
-    height: 150,
+    width: 120,
+    height: 120,
     borderRadius: 75,
     backgroundColor: "#00a86b",
     justifyContent: "center",
@@ -203,7 +238,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
-  tasbeehCount: { fontSize: 40, fontWeight: "bold", color: "#fff" },
+  tasbeehCount: {
+    fontSize: 40,
+    fontWeight: "bold",
+    color: "#fff",
+  },
 });
 
 export default TasbeehCounter;

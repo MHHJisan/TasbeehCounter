@@ -53,7 +53,21 @@ const DhikrScreen = () => {
   useEffect(() => {
     if (count === targetCount) {
       setShowConfetti(true);
-      Alert.alert("Mashallah!", `You completed ${currentDhikr} 33 times!`);
+
+      if (currentDhikr === "Allahu akbar") {
+        Alert.alert(
+          "MashaAllah!",
+          `You've completed Allahu Akbar 33 times!\n\n` +
+            "Now recite:\n\n" +
+            "🕋 Arabic:\nلَا إِلَـٰهَ إِلَّا ٱللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ ٱلْمُلْكُ وَلَهُ ٱلْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ\n\n" +
+            "🔤 Transliteration:\nLa ilaha ill-Allah wahdahu la sharika lah, lahu’l-mulk wa lahu’l-hamd wa huwa ‘ala kulli shay-in qadir\n\n" +
+            "🌍 English Meaning:\nThere is no god but Allah alone. He has no partner. To Him belongs the dominion and all praise. And He is capable of all things.\n\n" +
+            "🌐 বাংলা উচ্চারণ:\nলা ইলাহা ইল্লাল্লাহু ওয়াহদাহু লা শারীকালাহু, লাহুল মুলকু ওয়ালাহুল হামদু ওয়া হুয়া আলা কুল্লি শাই’ইন ক্বদীর\n\n" +
+            "📘 বাংলা অর্থ:\nআল্লাহ ছাড়া কোনো উপাস্য নেই। তিনি এক ও অদ্বিতীয়। তাঁরই রাজত্ব, তাঁরই সকল প্রশংসা এবং তিনি সব কিছুর উপর সক্ষম।"
+        );
+      } else {
+        Alert.alert("MashaAllah!", `You completed ${currentDhikr} 33 times!`);
+      }
     }
   }, [count]);
 
