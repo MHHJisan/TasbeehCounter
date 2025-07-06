@@ -15,7 +15,13 @@ const DhikrScreen = () => {
   const [count, setCount] = useState(0);
   const [currentDhikr, setCurrentDhikr] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const buttonRotateAnim = useRef(new Animated.Value(0)).current;
+  const textScaleAnim = useRef(new Animated.Value(1)).current;
   const confettiRef = useRef(null);
   const headerAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
@@ -28,6 +34,30 @@ const DhikrScreen = () => {
     { label: "Alhamdulillah", color: "#2196f3" },
     { label: "Allahu akbar", color: "#f44336" },
   ];
+
+  // Add pulse animation when button is idle
+  useEffect(() => {
+    if (currentDhikr && !isPressed && count < targetCount) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      return () => pulseAnimation.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [currentDhikr, isPressed, count, targetCount]);
 
   // Header entrance animation
   useEffect(() => {
@@ -49,26 +79,82 @@ const DhikrScreen = () => {
     setCurrentDhikr(dhikr);
     setCount(0);
     setShowConfetti(false);
+    setIsPressed(false);
+  };
+
+  const handlePressIn = () => {
+    if (count >= targetCount) return;
+    setIsPressed(true);
+    // Stop pulse animation when pressed
+    pulseAnim.setValue(1);
+
+    // Native animations (scale, opacity, rotation, text scale)
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.85,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonRotateAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(textScaleAnim, {
+        toValue: 1.1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    if (count >= targetCount) return;
+    setIsPressed(false);
+
+    // Native animations
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonRotateAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(textScaleAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const incrementCount = () => {
     if (count < targetCount) {
-      // Animate button scale on tap
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.85,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
       setCount(count + 1);
     }
+  };
+
+  const getButtonColor = () => {
+    if (!currentDhikr) return "#00a86b";
+    const progress = count / targetCount;
+    if (progress >= 0.8) return "#ff6b6b"; // Red when close to target
+    if (progress >= 0.6) return "#ffa726"; // Orange when 60%+ complete
+    if (progress >= 0.4) return "#66bb6a"; // Light green when 40%+ complete
+    return "#00a86b"; // Default green
   };
 
   useEffect(() => {
@@ -193,18 +279,49 @@ const DhikrScreen = () => {
 
           {currentDhikr && (
             <View style={styles.counterContainer}>
-              <Text style={styles.counterLabel}>{currentDhikr}</Text>
-              <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+              <Text style={styles.counterLabel}>
+                Tap to Count {currentDhikr}
+              </Text>
+              <Animated.View
+                style={[
+                  styles.countButton,
+                  {
+                    transform: [
+                      { scale: isPressed ? scaleAnim : pulseAnim },
+                      {
+                        rotate: buttonRotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0deg", "5deg"],
+                        }),
+                      },
+                    ],
+                    opacity: opacityAnim,
+                    backgroundColor: getButtonColor(),
+                  },
+                ]}
+              >
                 <TouchableOpacity
-                  style={[
-                    styles.countButton,
-                    count >= targetCount && { backgroundColor: "#bbb" },
-                  ]}
                   onPress={incrementCount}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  style={styles.countTouchable}
+                  activeOpacity={1}
                   disabled={count >= targetCount}
-                  activeOpacity={0.7}
                 >
-                  <Text style={styles.countText}>{count}</Text>
+                  <Animated.Text
+                    style={[
+                      styles.countText,
+                      {
+                        transform: [
+                          {
+                            scale: textScaleAnim,
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    {count}
+                  </Animated.Text>
                 </TouchableOpacity>
               </Animated.View>
               <Text style={styles.targetText}>Goal: {targetCount} times</Text>
@@ -351,29 +468,39 @@ const styles = StyleSheet.create({
     minHeight: 150,
   },
   counterLabel: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 16,
     marginBottom: 10,
     color: "#333",
   },
   countButton: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: "#00a86b",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 6,
-    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  countTouchable: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   countText: {
-    fontSize: 40,
-    fontWeight: "bold",
+    fontSize: 48,
+    fontWeight: "900",
     color: "#fff",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
   },
   targetText: {
     fontSize: 16,
