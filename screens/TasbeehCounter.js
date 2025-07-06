@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
+  Animated,
 } from "react-native";
 import { Audio } from "expo-audio";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -21,15 +22,43 @@ const TasbeehCounter = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
   const timerRef = useRef(null);
   const countRef = useRef(count);
   const soundRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     countRef.current = count;
   }, [count]);
+
+  useEffect(() => {
+    if (isRunning && !isPressed) {
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+      return () => pulseAnimation.stop();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [isRunning, isPressed]);
 
   const playBlastSound = async () => {
     try {
@@ -90,6 +119,57 @@ const TasbeehCounter = () => {
     };
   }, []);
 
+  const getButtonColor = () => {
+    if (!targetCount) return "#00a86b";
+    const progress = count / parseInt(targetCount, 10);
+    if (progress >= 0.8) return "#ff6b6b"; // Red when close to target
+    if (progress >= 0.6) return "#ffa726"; // Orange when 60%+ complete
+    if (progress >= 0.4) return "#66bb6a"; // Light green when 40%+ complete
+    return "#00a86b"; // Default green
+  };
+
+  const handlePressIn = () => {
+    setIsPressed(true);
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    setIsPressed(false);
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
   const incrementCount = () => {
     if (!isRunning) return;
     setCount((prev) => prev + 1);
@@ -142,12 +222,36 @@ const TasbeehCounter = () => {
         {isRunning && (
           <View style={styles.tasbeehContainer}>
             <Text style={styles.tasbeehLabel}>Tap to Count Tasbeeh</Text>
-            <TouchableOpacity
-              onPress={incrementCount}
-              style={styles.tasbeehButton}
+            <Animated.View
+              style={[
+                styles.tasbeehButton,
+                {
+                  transform: [
+                    { scale: Animated.multiply(scaleAnim, pulseAnim) },
+                  ],
+                  opacity: opacityAnim,
+                  backgroundColor: getButtonColor(),
+                  shadowOpacity: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.6],
+                  }),
+                  shadowRadius: glowAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [4, 8],
+                  }),
+                },
+              ]}
             >
-              <Text style={styles.tasbeehCount}>{count}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={incrementCount}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                style={styles.tasbeehTouchable}
+                activeOpacity={1}
+              >
+                <Text style={styles.tasbeehCount}>{count}</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         )}
 
@@ -237,6 +341,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 6,
+  },
+  tasbeehTouchable: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   tasbeehCount: {
     fontSize: 40,
