@@ -7,6 +7,7 @@ import {
   Alert,
   TouchableOpacity,
   Animated,
+  Dimensions,
 } from "react-native";
 import { Audio } from "expo-audio";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -14,6 +15,8 @@ import {
   useSafeAreaInsets,
   SafeAreaView,
 } from "react-native-safe-area-context";
+
+const { width } = Dimensions.get("window");
 
 const TasbeehCounter = () => {
   const [targetCount, setTargetCount] = useState("");
@@ -31,6 +34,8 @@ const TasbeehCounter = () => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const titleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     countRef.current = count;
@@ -171,11 +176,80 @@ const TasbeehCounter = () => {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
+  // Header entrance animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(headerAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
       <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
-        <Text style={styles.header}>Tasbeeh Counter with Alarm</Text>
-        <Text style={styles.title}>Set Your Tasbeeh Goal</Text>
+        {/* Enhanced Header */}
+        <Animated.View
+          style={[
+            styles.headerContainer,
+            {
+              transform: [
+                {
+                  translateY: headerAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-50, 0],
+                  }),
+                },
+                {
+                  scale: headerAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1],
+                  }),
+                },
+              ],
+              opacity: headerAnim,
+            },
+          ]}
+        >
+          <View style={styles.headerGradient}>
+            <View style={styles.headerDecoration}>
+              <Text style={styles.decorationText}>☪️</Text>
+            </View>
+            <Text style={styles.header}>🕌 Tasbeeh Counter</Text>
+            <Text style={styles.subHeader}>Count Your Blessings</Text>
+            <View style={styles.headerDecoration}>
+              <Text style={styles.decorationText}>☪️</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.titleContainer,
+            {
+              transform: [
+                {
+                  translateY: titleAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [30, 0],
+                  }),
+                },
+              ],
+              opacity: titleAnim,
+            },
+          ]}
+        >
+          <Text style={styles.title}>Set Your Tasbeeh Goal</Text>
+          <View style={styles.titleUnderline} />
+          <Text style={styles.titleSubtext}>Begin your spiritual journey</Text>
+        </Animated.View>
 
         <TextInput
           placeholder="Target Count (e.g. 500)"
@@ -257,23 +331,80 @@ const styles = StyleSheet.create({
     // paddingTop: 20,
     paddingHorizontal: 20,
   },
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerGradient: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    padding: 20,
+    borderRadius: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(75, 0, 130, 0.1)",
+  },
+  headerDecoration: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginVertical: 10,
+  },
+  decorationText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#4B0082",
+    opacity: 0.8,
+  },
   header: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "900",
     color: "#4B0082",
     textAlign: "center",
-    // marginTop: 20,
-    marginBottom: 20,
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 1,
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1.5,
+    marginVertical: 5,
+  },
+  subHeader: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6a4c93",
+    textAlign: "center",
+    marginTop: 5,
+    fontStyle: "italic",
+  },
+  titleContainer: {
+    alignItems: "center",
+    marginBottom: 25,
+    marginTop: 10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
-    marginVertical: 10,
+    color: "#4B0082",
     textAlign: "center",
+    marginBottom: 5,
+  },
+  titleUnderline: {
+    height: 3,
+    width: "60%",
+    backgroundColor: "#4B0082",
+    marginTop: 8,
+    borderRadius: 2,
+  },
+  titleSubtext: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#6a4c93",
+    textAlign: "center",
+    marginTop: 8,
+    opacity: 0.8,
   },
   input: {
     backgroundColor: "white",
