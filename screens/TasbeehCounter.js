@@ -37,6 +37,8 @@ const TasbeehCounter = () => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
+  const buttonGlowAnim = useRef(new Animated.Value(0)).current;
+  const buttonRotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     countRef.current = count;
@@ -138,13 +140,23 @@ const TasbeehCounter = () => {
     pulseAnim.setValue(1);
     Animated.parallel([
       Animated.timing(scaleAnim, {
-        toValue: 0.9,
+        toValue: 0.85,
         duration: 100,
         useNativeDriver: true,
       }),
       Animated.timing(opacityAnim, {
         toValue: 0.8,
         duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonGlowAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+      Animated.timing(buttonRotateAnim, {
+        toValue: 1,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
@@ -161,6 +173,16 @@ const TasbeehCounter = () => {
       Animated.timing(opacityAnim, {
         toValue: 1,
         duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonGlowAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(buttonRotateAnim, {
+        toValue: 0,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start();
@@ -301,14 +323,30 @@ const TasbeehCounter = () => {
                 style={[
                   styles.tasbeehButton,
                   {
-                    transform: [{ scale: isPressed ? scaleAnim : pulseAnim }],
+                    transform: [
+                      { scale: isPressed ? scaleAnim : pulseAnim },
+                      {
+                        rotate: buttonRotateAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0deg", "5deg"],
+                        }),
+                      },
+                    ],
                     opacity: opacityAnim,
                     backgroundColor: getButtonColor(),
-                    shadowOpacity: isPressed ? 0.6 : 0.3,
-                    shadowRadius: isPressed ? 8 : 4,
+                    shadowOpacity: buttonGlowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 0.8],
+                    }),
+                    shadowRadius: buttonGlowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [4, 12],
+                    }),
+                    shadowColor: getButtonColor(),
                   },
                 ]}
               >
+                <View style={styles.buttonInnerGlow} />
                 <TouchableOpacity
                   onPress={incrementCount}
                   onPressIn={handlePressIn}
@@ -316,7 +354,23 @@ const TasbeehCounter = () => {
                   style={styles.tasbeehTouchable}
                   activeOpacity={1}
                 >
-                  <Text style={styles.tasbeehCount}>{count}</Text>
+                  <Animated.Text
+                    style={[
+                      styles.tasbeehCount,
+                      {
+                        transform: [
+                          {
+                            scale: buttonRotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.1],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    {count}
+                  </Animated.Text>
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -459,17 +513,19 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   tasbeehButton: {
-    width: 120,
-    height: 120,
-    borderRadius: 75,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: "#00a86b",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 3,
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   tasbeehTouchable: {
     width: "100%",
@@ -478,9 +534,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tasbeehCount: {
-    fontSize: 40,
-    fontWeight: "bold",
+    fontSize: 48,
+    fontWeight: "900",
     color: "#fff",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
+  },
+  buttonInnerGlow: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    right: 10,
+    bottom: 10,
+    borderRadius: 60,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    shadowColor: "#fff",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 0,
   },
   scrollContainer: {
     flex: 1,
