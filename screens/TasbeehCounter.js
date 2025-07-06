@@ -37,8 +37,8 @@ const TasbeehCounter = () => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const headerAnim = useRef(new Animated.Value(0)).current;
   const titleAnim = useRef(new Animated.Value(0)).current;
-  const buttonGlowAnim = useRef(new Animated.Value(0)).current;
   const buttonRotateAnim = useRef(new Animated.Value(0)).current;
+  const textScaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     countRef.current = count;
@@ -140,7 +140,7 @@ const TasbeehCounter = () => {
     // Stop pulse animation when pressed
     pulseAnim.setValue(1);
 
-    // Native animations (scale, opacity, rotation)
+    // Native animations (scale, opacity, rotation, text scale)
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0.85,
@@ -157,14 +157,12 @@ const TasbeehCounter = () => {
         duration: 200,
         useNativeDriver: true,
       }),
+      Animated.timing(textScaleAnim, {
+        toValue: 1.1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
     ]).start();
-
-    // Non-native animation (glow) - run separately
-    Animated.timing(buttonGlowAnim, {
-      toValue: 1,
-      duration: 150,
-      useNativeDriver: false,
-    }).start();
   };
 
   const handlePressOut = () => {
@@ -187,14 +185,12 @@ const TasbeehCounter = () => {
         duration: 300,
         useNativeDriver: true,
       }),
+      Animated.timing(textScaleAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start();
-
-    // Non-native animation (glow) - run separately
-    Animated.timing(buttonGlowAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
   };
 
   const incrementCount = () => {
@@ -343,19 +339,9 @@ const TasbeehCounter = () => {
                     ],
                     opacity: opacityAnim,
                     backgroundColor: getButtonColor(),
-                    shadowOpacity: buttonGlowAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.3, 0.8],
-                    }),
-                    shadowRadius: buttonGlowAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [4, 12],
-                    }),
-                    shadowColor: getButtonColor(),
                   },
                 ]}
               >
-                <View style={styles.buttonInnerGlow} />
                 <TouchableOpacity
                   onPress={incrementCount}
                   onPressIn={handlePressIn}
@@ -369,10 +355,7 @@ const TasbeehCounter = () => {
                       {
                         transform: [
                           {
-                            scale: buttonRotateAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.1],
-                            }),
+                            scale: textScaleAnim,
                           },
                         ],
                       },
@@ -529,12 +512,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 3,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   tasbeehTouchable: {
     width: "100%",
@@ -550,20 +533,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     letterSpacing: 1,
-  },
-  buttonInnerGlow: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    right: 10,
-    bottom: 10,
-    borderRadius: 60,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    shadowColor: "#fff",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 0,
   },
   scrollContainer: {
     flex: 1,
