@@ -194,7 +194,7 @@ const TasbeehCounter = () => {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
+    <View style={{ flex: 1, backgroundColor: "#eef2f3" }}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
@@ -210,7 +210,7 @@ const TasbeehCounter = () => {
                   {
                     translateY: headerAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [-50, 0],
+                      outputRange: [0, 0],
                     }),
                   },
                   {
@@ -332,7 +332,7 @@ const TasbeehCounter = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -344,6 +344,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "center",
     marginBottom: 8,
+    marginTop: 0,
   },
   headerGradient: {
     backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 10,
-    paddingTop: 5,
+    paddingTop: 0,
   },
 });
 
