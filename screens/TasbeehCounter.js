@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { Audio } from "expo-audio";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -194,132 +195,143 @@ const TasbeehCounter = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
-      <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
-        {/* Enhanced Header */}
-        <Animated.View
-          style={[
-            styles.headerContainer,
-            {
-              transform: [
-                {
-                  translateY: headerAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-50, 0],
-                  }),
-                },
-                {
-                  scale: headerAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1],
-                  }),
-                },
-              ],
-              opacity: headerAnim,
-            },
-          ]}
-        >
-          <View style={styles.headerGradient}>
-            <View style={styles.headerDecoration}>
-              <Text style={styles.decorationText}>☪️</Text>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
+          {/* Enhanced Header */}
+          <Animated.View
+            style={[
+              styles.headerContainer,
+              {
+                transform: [
+                  {
+                    translateY: headerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-50, 0],
+                    }),
+                  },
+                  {
+                    scale: headerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                ],
+                opacity: headerAnim,
+              },
+            ]}
+          >
+            <View style={styles.headerGradient}>
+              <View style={styles.headerDecoration}>
+                <Text style={styles.decorationText}>☪️</Text>
+              </View>
+              <Text style={styles.header}>🕌 Tasbeeh Counter</Text>
+              <Text style={styles.subHeader}>Count Your Blessings</Text>
+              <View style={styles.headerDecoration}>
+                <Text style={styles.decorationText}>☪️</Text>
+              </View>
             </View>
-            <Text style={styles.header}>🕌 Tasbeeh Counter</Text>
-            <Text style={styles.subHeader}>Count Your Blessings</Text>
-            <View style={styles.headerDecoration}>
-              <Text style={styles.decorationText}>☪️</Text>
-            </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
 
-        <Animated.View
-          style={[
-            styles.titleContainer,
-            {
-              transform: [
-                {
-                  translateY: titleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [30, 0],
-                  }),
-                },
-              ],
-              opacity: titleAnim,
-            },
-          ]}
-        >
-          <Text style={styles.title}>Set Your Tasbeeh Goal</Text>
-          <View style={styles.titleUnderline} />
-          <Text style={styles.titleSubtext}>Begin your spiritual journey</Text>
-        </Animated.View>
+          <Animated.View
+            style={[
+              styles.titleContainer,
+              {
+                transform: [
+                  {
+                    translateY: titleAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [30, 0],
+                    }),
+                  },
+                ],
+                opacity: titleAnim,
+              },
+            ]}
+          >
+            <Text style={styles.title}>Set Your Tasbeeh Goal</Text>
+            <View style={styles.titleUnderline} />
+            <Text style={styles.titleSubtext}>
+              Begin your spiritual journey
+            </Text>
+          </Animated.View>
 
-        <TextInput
-          placeholder="Target Count (e.g. 500)"
-          value={targetCount}
-          onChangeText={setTargetCount}
-          keyboardType="numeric"
-          style={styles.input}
-          editable={!isRunning}
-        />
-
-        <TextInput
-          placeholder="Time Limit (minutes)"
-          value={durationMinutes}
-          onChangeText={setDurationMinutes}
-          keyboardType="numeric"
-          style={styles.input}
-          editable={!isRunning}
-        />
-
-        <TouchableOpacity
-          onPress={startCounting}
-          disabled={isRunning}
-          style={[styles.startButton, isRunning && { backgroundColor: "#ccc" }]}
-        >
-          <Text style={styles.startButtonText}>Start Counting</Text>
-        </TouchableOpacity>
-
-        <View style={styles.info}>
-          <Text style={styles.label}>Count: {count}</Text>
-          <Text style={styles.label}>Target: {targetCount}</Text>
-          <Text style={styles.label}>Time Left: {formatTime(timeLeft)}</Text>
-        </View>
-
-        {isRunning && (
-          <View style={styles.tasbeehContainer}>
-            <Text style={styles.tasbeehLabel}>Tap to Count Tasbeeh</Text>
-            <Animated.View
-              style={[
-                styles.tasbeehButton,
-                {
-                  transform: [{ scale: isPressed ? scaleAnim : pulseAnim }],
-                  opacity: opacityAnim,
-                  backgroundColor: getButtonColor(),
-                  shadowOpacity: isPressed ? 0.6 : 0.3,
-                  shadowRadius: isPressed ? 8 : 4,
-                },
-              ]}
-            >
-              <TouchableOpacity
-                onPress={incrementCount}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                style={styles.tasbeehTouchable}
-                activeOpacity={1}
-              >
-                <Text style={styles.tasbeehCount}>{count}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        )}
-
-        {showConfetti && (
-          <ConfettiCannon
-            count={150}
-            origin={{ x: -10, y: 0 }}
-            fadeOut={true}
-            onAnimationEnd={() => setShowConfetti(false)}
+          <TextInput
+            placeholder="Target Count (e.g. 500)"
+            value={targetCount}
+            onChangeText={setTargetCount}
+            keyboardType="numeric"
+            style={styles.input}
+            editable={!isRunning}
           />
-        )}
-      </View>
+
+          <TextInput
+            placeholder="Time Limit (minutes)"
+            value={durationMinutes}
+            onChangeText={setDurationMinutes}
+            keyboardType="numeric"
+            style={styles.input}
+            editable={!isRunning}
+          />
+
+          <TouchableOpacity
+            onPress={startCounting}
+            disabled={isRunning}
+            style={[
+              styles.startButton,
+              isRunning && { backgroundColor: "#ccc" },
+            ]}
+          >
+            <Text style={styles.startButtonText}>Start Counting</Text>
+          </TouchableOpacity>
+
+          <View style={styles.info}>
+            <Text style={styles.label}>Count: {count}</Text>
+            <Text style={styles.label}>Target: {targetCount}</Text>
+            <Text style={styles.label}>Time Left: {formatTime(timeLeft)}</Text>
+          </View>
+
+          {isRunning && (
+            <View style={styles.tasbeehContainer}>
+              <Text style={styles.tasbeehLabel}>Tap to Count Tasbeeh</Text>
+              <Animated.View
+                style={[
+                  styles.tasbeehButton,
+                  {
+                    transform: [{ scale: isPressed ? scaleAnim : pulseAnim }],
+                    opacity: opacityAnim,
+                    backgroundColor: getButtonColor(),
+                    shadowOpacity: isPressed ? 0.6 : 0.3,
+                    shadowRadius: isPressed ? 8 : 4,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  onPress={incrementCount}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  style={styles.tasbeehTouchable}
+                  activeOpacity={1}
+                >
+                  <Text style={styles.tasbeehCount}>{count}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          )}
+
+          {showConfetti && (
+            <ConfettiCannon
+              count={150}
+              origin={{ x: -10, y: 0 }}
+              fadeOut={true}
+              onAnimationEnd={() => setShowConfetti(false)}
+            />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -328,7 +340,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#eef2f3",
-    paddingHorizontal: 15,
   },
   headerContainer: {
     alignItems: "center",
@@ -434,9 +445,9 @@ const styles = StyleSheet.create({
   },
   tasbeehContainer: {
     alignItems: "center",
-    marginTop: 5,
-    flex: 1,
-    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 30,
+    minHeight: 200,
   },
   tasbeehLabel: {
     fontSize: 16,
@@ -466,6 +477,12 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "bold",
     color: "#fff",
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 15,
   },
 });
 
