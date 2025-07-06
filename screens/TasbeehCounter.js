@@ -137,7 +137,10 @@ const TasbeehCounter = () => {
 
   const handlePressIn = () => {
     setIsPressed(true);
+    // Stop pulse animation when pressed
     pulseAnim.setValue(1);
+
+    // Native animations (scale, opacity, rotation)
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0.85,
@@ -149,21 +152,25 @@ const TasbeehCounter = () => {
         duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(buttonGlowAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
       Animated.timing(buttonRotateAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Non-native animation (glow) - run separately
+    Animated.timing(buttonGlowAnim, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: false,
+    }).start();
   };
 
   const handlePressOut = () => {
     setIsPressed(false);
+
+    // Native animations
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1,
@@ -175,17 +182,19 @@ const TasbeehCounter = () => {
         duration: 150,
         useNativeDriver: true,
       }),
-      Animated.timing(buttonGlowAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
       Animated.timing(buttonRotateAnim, {
         toValue: 0,
         duration: 300,
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Non-native animation (glow) - run separately
+    Animated.timing(buttonGlowAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
   };
 
   const incrementCount = () => {
