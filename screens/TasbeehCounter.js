@@ -129,6 +129,7 @@ const TasbeehCounter = () => {
 
   const handlePressIn = () => {
     setIsPressed(true);
+    pulseAnim.setValue(1);
     Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 0.9,
@@ -215,9 +216,7 @@ const TasbeehCounter = () => {
               style={[
                 styles.tasbeehButton,
                 {
-                  transform: [
-                    { scale: Animated.multiply(scaleAnim, pulseAnim) },
-                  ],
+                  transform: [{ scale: isPressed ? scaleAnim : pulseAnim }],
                   opacity: opacityAnim,
                   backgroundColor: getButtonColor(),
                   shadowOpacity: isPressed ? 0.6 : 0.3,
