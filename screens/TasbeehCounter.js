@@ -343,8 +343,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: "center",
-    marginBottom: 8,
-    marginTop: 0,
+    marginBottom: 15,
+    marginTop: 8,
   },
   headerGradient: {
     backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   titleContainer: {
     alignItems: "center",
     marginBottom: 12,
-    marginTop: 2,
+    marginTop: 8,
   },
   title: {
     fontSize: 16,
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 10,
-    paddingTop: 0,
+    paddingTop: 2,
   },
 });
 
