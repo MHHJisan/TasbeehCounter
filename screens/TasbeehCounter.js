@@ -30,7 +30,6 @@ const TasbeehCounter = () => {
   const insets = useSafeAreaInsets();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -141,11 +140,6 @@ const TasbeehCounter = () => {
         duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(glowAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: false,
-      }),
     ]).start();
   };
 
@@ -161,11 +155,6 @@ const TasbeehCounter = () => {
         toValue: 1,
         duration: 150,
         useNativeDriver: true,
-      }),
-      Animated.timing(glowAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: false,
       }),
     ]).start();
   };
@@ -231,14 +220,8 @@ const TasbeehCounter = () => {
                   ],
                   opacity: opacityAnim,
                   backgroundColor: getButtonColor(),
-                  shadowOpacity: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 0.6],
-                  }),
-                  shadowRadius: glowAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [4, 8],
-                  }),
+                  shadowOpacity: isPressed ? 0.6 : 0.3,
+                  shadowRadius: isPressed ? 8 : 4,
                 },
               ]}
             >
