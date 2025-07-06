@@ -225,12 +225,12 @@ const TasbeehCounter = () => {
             ]}
           >
             <View style={styles.headerGradient}>
-              <View style={styles.headerDecoration}>
+              <View style={styles.headerRow}>
                 <Text style={styles.decorationText}>☪️</Text>
-              </View>
-              <Text style={styles.header}>🕌 Tasbeeh Counter</Text>
-              <Text style={styles.subHeader}>Count Your Blessings</Text>
-              <View style={styles.headerDecoration}>
+                <View style={styles.headerTextContainer}>
+                  <Text style={styles.header}>🕌 Tasbeeh Counter</Text>
+                  <Text style={styles.subHeader}>Count Your Blessings</Text>
+                </View>
                 <Text style={styles.decorationText}>☪️</Text>
               </View>
             </View>
@@ -343,11 +343,11 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   headerGradient: {
     backgroundColor: "rgba(255, 255, 255, 0.9)",
-    padding: 10,
+    padding: 8,
     borderRadius: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -357,21 +357,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(75, 0, 130, 0.1)",
   },
-  headerDecoration: {
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginVertical: 3,
+  },
+  headerTextContainer: {
+    flexDirection: "column",
+    alignItems: "center",
   },
   decorationText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#4B0082",
     opacity: 0.8,
   },
   header: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "900",
     color: "#4B0082",
     textAlign: "center",
@@ -379,20 +382,20 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     letterSpacing: 0.5,
-    marginVertical: 2,
+    marginVertical: 0,
   },
   subHeader: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: "#6a4c93",
     textAlign: "center",
-    marginTop: 2,
+    marginTop: 1,
     fontStyle: "italic",
   },
   titleContainer: {
     alignItems: "center",
-    marginBottom: 10,
-    marginTop: 3,
+    marginBottom: 12,
+    marginTop: 2,
   },
   title: {
     fontSize: 16,
@@ -483,6 +486,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 10,
+    paddingTop: 5,
   },
 });
 
