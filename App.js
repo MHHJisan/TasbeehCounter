@@ -21,6 +21,8 @@ const App = () => {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
+          headerShown: false, // 👈 Hides the header at the top
+
           tabBarIcon: ({ focused, color, size }) => {
             if (route.name === "TasbeehCounter") {
               return (
