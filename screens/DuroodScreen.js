@@ -5,14 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ImageBackground,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 
-const STORAGE_KEY = "@durood_count";
-const DATE_KEY = "@durood_date";
-
+const STORAGE_PREFIX = "@durood_";
 const DUROOD_OPTIONS = [
   "Allahumma salli wa sallim ala nabiyyina Muhammad ﷺ",
   "As-salatu was-salamu ala Rasulullah ﷺ",
@@ -21,86 +18,126 @@ const DUROOD_OPTIONS = [
 
 const DuroodScreen = () => {
   const [count, setCount] = useState(0);
+  const [yesterdayCount, setYesterdayCount] = useState(0);
   const [selectedDurood, setSelectedDurood] = useState(DUROOD_OPTIONS[0]);
+  const [history, setHistory] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
+
+  const today = moment().format("YYYY-MM-DD");
 
   useEffect(() => {
-    checkAndResetCount();
+    loadTodayCount();
+    loadYesterdayCount();
+    loadWeeklyHistory();
   }, []);
 
   useEffect(() => {
-    saveCount();
+    saveTodayCount();
   }, [count]);
 
-  const checkAndResetCount = async () => {
-    const savedDate = await AsyncStorage.getItem(DATE_KEY);
-    const today = moment().format("YYYY-MM-DD");
-
-    if (savedDate !== today) {
-      await AsyncStorage.setItem(DATE_KEY, today);
-      await AsyncStorage.setItem(STORAGE_KEY, "0");
-      setCount(0);
-    } else {
-      const savedCount = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedCount !== null) {
-        setCount(parseInt(savedCount));
-      }
-    }
+  const loadTodayCount = async () => {
+    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+    setCount(savedCount ? parseInt(savedCount) : 0);
   };
 
-  const saveCount = async () => {
-    await AsyncStorage.setItem(STORAGE_KEY, count.toString());
+  const saveTodayCount = async () => {
+    await AsyncStorage.setItem(STORAGE_PREFIX + today, count.toString());
+  };
+
+  const loadYesterdayCount = async () => {
+    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
+    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
+    setYesterdayCount(savedCount ? parseInt(savedCount) : 0);
+  };
+
+  const loadWeeklyHistory = async () => {
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = moment().subtract(i, "days").format("YYYY-MM-DD");
+      const stored = await AsyncStorage.getItem(STORAGE_PREFIX + date);
+      last7Days.push({ date, count: stored ? parseInt(stored) : 0 });
+    }
+    setHistory(last7Days);
   };
 
   const incrementCount = () => {
     setCount((prev) => prev + 1);
   };
 
+  const toggleSummary = () => {
+    if (!showSummary) loadWeeklyHistory();
+    setShowSummary((prev) => !prev);
+  };
+
   return (
-    // Optional background image
-    // <ImageBackground source={require('../assets/mosque-bg.png')} style={{ flex: 1 }}>
-    <View style={styles.container}>
-      <Text style={styles.subtext}>🕌 Daily Durood Counter</Text>
-      <Text style={styles.intro}>
-        Send more and more Salawat upon the Prophet ﷺ
-      </Text>
+    <ScrollView style={{ flex: 1, backgroundColor: "#f3fdfb" }}>
+      <View style={styles.container}>
+        <Text style={styles.subtext}>🕌 Daily Durood Counter</Text>
+        <Text style={styles.intro}>
+          Send more and more Salawat upon the Prophet ﷺ
+        </Text>
 
-      <Text style={styles.header}>{selectedDurood}</Text>
+        <Text style={styles.header}>{selectedDurood}</Text>
 
-      <View style={styles.mainRow}>
-        <TouchableOpacity onPress={incrementCount} style={styles.counterButton}>
-          <Text style={styles.counterText}>{count}</Text>
+        <View style={styles.mainRow}>
+          <TouchableOpacity
+            onPress={incrementCount}
+            style={styles.counterButton}
+          >
+            <Text style={styles.counterText}>{count}</Text>
+          </TouchableOpacity>
+
+          <View style={styles.duroodSelector}>
+            {DUROOD_OPTIONS.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.duroodButton,
+                  selectedDurood === item && styles.duroodButtonActive,
+                ]}
+                onPress={() => setSelectedDurood(item)}
+              >
+                <Text
+                  style={[
+                    styles.duroodButtonText,
+                    selectedDurood === item && styles.duroodButtonTextActive,
+                  ]}
+                >
+                  {index + 1}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <Text style={styles.yesterdayText}>
+          📆 Yesterday's Count: {yesterdayCount}
+        </Text>
+
+        <TouchableOpacity onPress={toggleSummary} style={styles.summaryButton}>
+          <Text style={styles.summaryButtonText}>
+            {showSummary ? "Hide Summary" : "📊 Show Weekly Summary"}
+          </Text>
         </TouchableOpacity>
 
-        <View style={styles.duroodSelector}>
-          {DUROOD_OPTIONS.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.duroodButton,
-                selectedDurood === item && styles.duroodButtonActive,
-              ]}
-              onPress={() => setSelectedDurood(item)}
-            >
-              <Text
-                style={[
-                  styles.duroodButtonText,
-                  selectedDurood === item && styles.duroodButtonTextActive,
-                ]}
-              >
-                {index + 1}
+        {showSummary && (
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
+            {history.map((entry) => (
+              <Text key={entry.date} style={styles.historyEntry}>
+                {moment(entry.date).format("ddd, MMM D")}: {entry.count}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+            ))}
+          </View>
+        )}
 
-      <Text style={styles.note}>
-        ✨ This counter resets at midnight (12:00 AM). Keep sending blessings
-        upon the Prophet
-        <Text style={{ fontSize: 14, color: "#065f46" }}> ﷺ </Text>!
-      </Text>
-    </View>
-    // </ImageBackground>
+        <Text style={styles.note}>
+          ✨ This counter resets at midnight (12:00 AM). Keep sending blessings
+          upon the Prophet
+          <Text style={{ fontSize: 14, color: "#065f46" }}> ﷺ </Text>!
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -123,11 +160,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     borderRadius: 20,
     marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
     textAlign: "center",
   },
   intro: {
@@ -167,17 +199,6 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: "bold",
     color: "#fff",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  note: {
-    marginTop: 30,
-    color: "#555",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-    fontStyle: "italic",
   },
   duroodSelector: {
     marginLeft: 20,
@@ -205,5 +226,53 @@ const styles = StyleSheet.create({
   },
   duroodButtonTextActive: {
     color: "#fff",
+  },
+  yesterdayText: {
+    fontSize: 14,
+    color: "#374151",
+    marginTop: 10,
+    marginBottom: 8,
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  summaryButton: {
+    backgroundColor: "#facc15",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginVertical: 15,
+  },
+  summaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
+  summaryBox: {
+    backgroundColor: "#f3f4f6",
+    padding: 16,
+    borderRadius: 10,
+    width: "100%",
+    marginBottom: 20,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1e3a8a",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  historyEntry: {
+    fontSize: 14,
+    color: "#374151",
+    paddingVertical: 2,
+    textAlign: "center",
+  },
+  note: {
+    marginTop: 10,
+    color: "#555",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+    fontStyle: "italic",
   },
 });
