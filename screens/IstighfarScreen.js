@@ -8,156 +8,133 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
+import istighfarData from "../data/istigfhar/istigfhar.json";
 
-const STORAGE_KEY = "@istighfar_count";
-const DATE_KEY = "@istighfar_date";
-
-const ISTIGHFAR_DATA = [
-  {
-    arabic: "أستغفر الله",
-    transliteration: "Astaghfirullah",
-    meaning: "I seek forgiveness from Allah.",
-  },
-  {
-    arabic: "أستغفر الله وأتوب إليه",
-    transliteration: "Astaghfirullah wa atubu ilayh",
-    meaning: "I seek forgiveness from Allah and turn to Him in repentance.",
-  },
-  {
-    arabic: "أستغفر الله ربي من كل ذنب وأتوب إليه",
-    transliteration: "Astaghfirullah Rabbi min kulli dhambin wa atubu ilayh",
-    meaning:
-      "I seek forgiveness from Allah, my Lord, for every sin and I repent to Him.",
-  },
-  {
-    arabic: "رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ",
-    transliteration: "Rabbi ighfir li wa tub ‘alayya",
-    meaning: "My Lord, forgive me and accept my repentance.",
-  },
-  {
-    arabic:
-      "لَا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ",
-    transliteration: "La ilaha illa Anta, subhanaka inni kuntu minaz-zalimin",
-    meaning:
-      "There is no deity but You; glory be to You, I was indeed among the wrongdoers.",
-  },
-  {
-    arabic: "أستغفر الله الذي لا إله إلا هو الحي القيوم وأتوب إليه",
-    transliteration:
-      "Astaghfirullaha alladhi la ilaha illa huwa al-hayyul qayyoom wa atubu ilayh",
-    meaning:
-      "I seek forgiveness from Allah, there is no god but He, the Ever-Living, the Sustainer, and I repent to Him.",
-  },
-  {
-    arabic:
-      "اللَّهُمَّ أَنْتَ رَبِّي، لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَىٰ عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي، فَاغْفِرْ لِي، فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ",
-    transliteration:
-      "Allahumma Anta Rabbi, la ilaha illa Anta, khalaqtani wa ana ‘abduka, wa ana ‘ala ‘ahdika wa wa’dika mastata’tu, a’udhu bika min sharri ma sana’tu, abu’u laka bini’matika ‘alayya, wa abu’u bidhanbi, faghfir li fa innahu la yaghfirudh-dhunuba illa Anta.",
-    meaning:
-      "O Allah! You are my Lord. There is no true deity except You. You created me and I am Your servant, and I am on Your covenant and promise as much as I can. I seek refuge in You from the evil of what I have done. I acknowledge Your blessings upon me and I confess my sins to You. So forgive me, for surely no one can forgive sins except You.",
-  },
-];
+const STORAGE_PREFIX = "@istighfar_";
+const ISTIGHFAR_DATA = istighfarData;
 
 const IstighfarScreen = () => {
   const [count, setCount] = useState(0);
+  const [yesterdayCount, setYesterdayCount] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [weeklyHistory, setWeeklyHistory] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
 
+  const today = moment().format("YYYY-MM-DD");
   const selectedIstighfar = ISTIGHFAR_DATA[selectedIndex];
 
   useEffect(() => {
-    checkAndResetCount();
+    loadTodayCount();
+    loadYesterdayCount();
     loadWeeklyHistory();
   }, []);
 
   useEffect(() => {
-    saveCount();
+    saveTodayCount();
   }, [count]);
 
-  const checkAndResetCount = async () => {
-    const today = moment().format("YYYY-MM-DD");
-    const savedDate = await AsyncStorage.getItem(DATE_KEY);
-
-    if (savedDate !== today) {
-      await AsyncStorage.setItem(DATE_KEY, today);
-      await AsyncStorage.setItem(STORAGE_KEY, "0");
-      setCount(0);
+  const loadTodayCount = async () => {
+    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+    if (savedCount !== null) {
+      setCount(parseInt(savedCount));
     } else {
-      const savedCount = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedCount !== null) setCount(parseInt(savedCount));
+      setCount(0);
     }
   };
 
-  const saveCount = async () => {
-    const today = moment().format("YYYY-MM-DD");
-    await AsyncStorage.setItem(STORAGE_KEY, count.toString());
-    await AsyncStorage.setItem(`@istighfar_count_${today}`, count.toString());
+  const loadYesterdayCount = async () => {
+    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
+    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
+    setYesterdayCount(savedCount ? parseInt(savedCount) : 0);
+  };
+
+  const saveTodayCount = async () => {
+    await AsyncStorage.setItem(STORAGE_PREFIX + today, count.toString());
   };
 
   const loadWeeklyHistory = async () => {
-    const history = [];
+    const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const date = moment().subtract(i, "days").format("YYYY-MM-DD");
-      const stored = await AsyncStorage.getItem(`@istighfar_count_${date}`);
-      history.push({ date, count: stored ? parseInt(stored) : 0 });
+      const stored = await AsyncStorage.getItem(STORAGE_PREFIX + date);
+      last7Days.push({ date, count: stored ? parseInt(stored) : 0 });
     }
-    setWeeklyHistory(history);
+    setHistory(last7Days);
   };
 
   const incrementCount = () => {
     setCount((prev) => prev + 1);
   };
 
+  const toggleSummary = () => {
+    if (!showSummary) loadWeeklyHistory();
+    setShowSummary((prev) => !prev);
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.subtext}>🤲 Daily Istighfar Counter</Text>
+    <ScrollView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
+      <View style={styles.container}>
+        <Text style={styles.subtext}>🤲 Daily Istighfar Counter</Text>
 
-      <View style={styles.duaBox}>
-        <Text style={styles.arabic}>{selectedIstighfar.arabic}</Text>
-        <Text style={styles.transliteration}>
-          {selectedIstighfar.transliteration}
-        </Text>
-        <Text style={styles.meaning}>{selectedIstighfar.meaning}</Text>
-      </View>
-
-      <TouchableOpacity onPress={incrementCount} style={styles.counterButton}>
-        <Text style={styles.counterText}>{count}</Text>
-      </TouchableOpacity>
-
-      <View style={styles.selectorRow}>
-        {ISTIGHFAR_DATA.map((_, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.selectorButton,
-              selectedIndex === index && styles.selectorActive,
-            ]}
-            onPress={() => setSelectedIndex(index)}
-          >
-            <Text
-              style={[
-                styles.selectorText,
-                selectedIndex === index && styles.selectorTextActive,
-              ]}
-            >
-              {index + 1}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.historyBox}>
-        <Text style={styles.historyTitle}>📊 Weekly Istighfar Summary</Text>
-        {weeklyHistory.map((item, index) => (
-          <Text key={index} style={styles.historyText}>
-            {moment(item.date).format("ddd, MMM D")}: {item.count}
+        <ScrollView style={styles.duaBox}>
+          <Text style={styles.arabic}>{selectedIstighfar.arabic}</Text>
+          <Text style={styles.transliteration}>
+            {selectedIstighfar.transliteration}
           </Text>
-        ))}
-      </View>
+          <Text style={styles.meaning}>{selectedIstighfar.meaning}</Text>
+        </ScrollView>
 
-      <Text style={styles.note}>
-        Counter resets daily at 12:00 AM. Keep seeking Allah's forgiveness.
-      </Text>
+        <TouchableOpacity onPress={incrementCount} style={styles.counterButton}>
+          <Text style={styles.counterText}>{count}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.yesterdayText}>
+          📆 Yesterday's Count: {yesterdayCount}
+        </Text>
+
+        <View style={styles.selectorRow}>
+          {ISTIGHFAR_DATA.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.istighfarButton,
+                selectedIndex === index && styles.istighfarButtonActive,
+              ]}
+              onPress={() => setSelectedIndex(index)}
+            >
+              <Text
+                style={[
+                  styles.istighfarButtonText,
+                  selectedIndex === index && styles.istighfarButtonTextActive,
+                ]}
+              >
+                {index + 1}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity onPress={toggleSummary} style={styles.summaryButton}>
+          <Text style={styles.summaryButtonText}>
+            {showSummary ? "Hide Summary" : "📊 Show Weekly Summary"}
+          </Text>
+        </TouchableOpacity>
+
+        {showSummary && (
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
+            {history.map((entry) => (
+              <Text key={entry.date} style={styles.historyEntry}>
+                {moment(entry.date).format("ddd, MMM D")}: {entry.count}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        <Text style={styles.note}>
+          ✨ Counter resets at midnight (12:00 AM). Keep seeking forgiveness!
+        </Text>
+      </View>
     </ScrollView>
   );
 };
@@ -166,22 +143,22 @@ export default IstighfarScreen;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#eef2f3",
     padding: 20,
-    flex: 1,
+    alignItems: "center",
   },
   subtext: {
     fontSize: 22,
     fontWeight: "700",
     color: "#1e3a8a",
-    marginBottom: 20,
     backgroundColor: "#dbeafe",
     paddingVertical: 8,
     paddingHorizontal: 25,
     borderRadius: 14,
-    textAlign: "center",
+    marginBottom: 20,
   },
   duaBox: {
+    maxHeight: 210,
+    width: "100%",
     padding: 15,
     marginBottom: 15,
     backgroundColor: "#fff",
@@ -208,6 +185,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     textAlign: "center",
+    lineHeight: 20,
   },
   counterButton: {
     width: 160,
@@ -216,21 +194,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#0284c7",
     justifyContent: "center",
     alignItems: "center",
-    alignSelf: "center",
     marginVertical: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   counterText: {
     fontSize: 50,
     fontWeight: "bold",
     color: "#fff",
   },
+  yesterdayText: {
+    fontSize: 14,
+    color: "#374151",
+    marginBottom: 10,
+    fontStyle: "italic",
+    textAlign: "center",
+  },
   selectorRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 10,
+    marginBottom: 10,
   },
-  selectorButton: {
+  istighfarButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -239,40 +228,54 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 6,
   },
-  selectorActive: {
+  istighfarButtonActive: {
     backgroundColor: "#1e40af",
   },
-  selectorText: {
-    fontWeight: "bold",
-    fontSize: 16,
+  istighfarButtonText: {
     color: "#333",
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  selectorTextActive: {
+  istighfarButtonTextActive: {
     color: "#fff",
   },
-  historyBox: {
-    marginTop: 20,
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+  summaryButton: {
+    backgroundColor: "#facc15",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginVertical: 15,
   },
-  historyTitle: {
+  summaryButtonText: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 10,
     color: "#1f2937",
   },
-  historyText: {
+  summaryBox: {
+    backgroundColor: "#f3f4f6",
+    padding: 16,
+    borderRadius: 10,
+    width: "100%",
+    marginBottom: 20,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1e3a8a",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  historyEntry: {
     fontSize: 14,
     color: "#374151",
     paddingVertical: 2,
+    textAlign: "center",
   },
   note: {
+    marginTop: 15,
     fontSize: 13,
     color: "#6b7280",
     textAlign: "center",
-    paddingTop: 20,
+    paddingHorizontal: 15,
   },
 });
