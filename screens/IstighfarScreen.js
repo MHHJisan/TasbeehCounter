@@ -11,6 +11,7 @@ import moment from "moment";
 
 const STORAGE_KEY = "@istighfar_count";
 const DATE_KEY = "@istighfar_date";
+const YESTERDAY_KEY = "@istighfar_yesterday_count";
 
 const ISTIGHFAR_DATA = [
   {
@@ -54,38 +55,57 @@ const ISTIGHFAR_DATA = [
     transliteration:
       "Allahumma Anta Rabbi, la ilaha illa Anta, khalaqtani wa ana ‘abduka, wa ana ‘ala ‘ahdika wa wa’dika mastata’tu, a’udhu bika min sharri ma sana’tu, abu’u laka bini’matika ‘alayya, wa abu’u bidhanbi, faghfir li fa innahu la yaghfirudh-dhunuba illa Anta.",
     meaning:
-      "O Allah! You are my Lord. There is no true deity except You. You created me and I am Your servant, and I am on Your covenant and promise as much as I can. I seek refuge in You from the evil of what I have done. I acknowledge Your blessings upon me and I confess my sins to You. So forgive me, for surely no one can forgive sins except You.",
+      "O Allah! You are my Lord. There is no true deity except You. You created me and I am Your servant, and I am on Your covenant and promise as much as I can...",
   },
 ];
 
 const IstighfarScreen = () => {
   const [count, setCount] = useState(0);
+  const [previousCount, setPreviousCount] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [currentDate, setCurrentDate] = useState(moment().format("YYYY-MM-DD"));
 
   const selectedIstighfar = ISTIGHFAR_DATA[selectedIndex];
 
   useEffect(() => {
-    checkAndResetCount();
+    initializeCount();
+    const interval = setInterval(checkDateChange, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     saveCount();
   }, [count]);
 
-  const checkAndResetCount = async () => {
+  const initializeCount = async () => {
     const savedDate = await AsyncStorage.getItem(DATE_KEY);
     const today = moment().format("YYYY-MM-DD");
 
     if (savedDate !== today) {
-      await AsyncStorage.setItem(DATE_KEY, today);
-      await AsyncStorage.setItem(STORAGE_KEY, "0");
-      setCount(0);
+      await handleDateChange();
     } else {
       const savedCount = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedCount !== null) {
-        setCount(parseInt(savedCount));
-      }
+      const savedYesterday = await AsyncStorage.getItem(YESTERDAY_KEY);
+      if (savedCount !== null) setCount(parseInt(savedCount));
+      if (savedYesterday !== null) setPreviousCount(parseInt(savedYesterday));
     }
+  };
+
+  const checkDateChange = async () => {
+    const today = moment().format("YYYY-MM-DD");
+    if (today !== currentDate) {
+      setCurrentDate(today);
+      await handleDateChange();
+    }
+  };
+
+  const handleDateChange = async () => {
+    const savedCount = await AsyncStorage.getItem(STORAGE_KEY);
+    await AsyncStorage.setItem(DATE_KEY, moment().format("YYYY-MM-DD"));
+    await AsyncStorage.setItem(YESTERDAY_KEY, savedCount || "0");
+    await AsyncStorage.setItem(STORAGE_KEY, "0");
+    setPreviousCount(parseInt(savedCount) || 0);
+    setCount(0);
   };
 
   const saveCount = async () => {
@@ -112,6 +132,11 @@ const IstighfarScreen = () => {
         <Text style={styles.counterText}>{count}</Text>
       </TouchableOpacity>
 
+      <Text style={styles.yesterday}>
+        Yesterday’s Count:{" "}
+        <Text style={{ fontWeight: "bold" }}>{previousCount}</Text>
+      </Text>
+
       <View style={styles.selectorRow}>
         {ISTIGHFAR_DATA.map((_, index) => (
           <TouchableOpacity
@@ -135,7 +160,8 @@ const IstighfarScreen = () => {
       </View>
 
       <Text style={styles.note}>
-        Counter resets daily at 12:00 AM. Keep seeking Allah's forgiveness.
+        ✨ Counter resets daily at 12:00 AM. Keep seeking Allah’s forgiveness
+        (Astaghfirullah)!
       </Text>
     </View>
   );
@@ -160,11 +186,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 25,
     borderRadius: 14,
-    overflow: "hidden",
     textAlign: "center",
   },
   duaBox: {
-    maxHeight: 210,
+    maxHeight: 220,
     width: "100%",
     padding: 15,
     marginBottom: 15,
@@ -213,11 +238,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
   },
+  yesterday: {
+    fontSize: 15,
+    color: "#374151",
+    marginBottom: 10,
+  },
   selectorRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 10,
   },
   istighfarButton: {
     width: 40,
