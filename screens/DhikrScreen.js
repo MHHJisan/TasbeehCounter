@@ -9,6 +9,8 @@ import {
   ScrollView,
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { StatusBar } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DhikrScreen = () => {
@@ -179,7 +181,13 @@ const DhikrScreen = () => {
   }, [count]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#eef2f3" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#eef2f3",
+        paddingTop: StatusBar.currentHeight || 40,
+      }}
+    >
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}

@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StatusBar } from "react-native";
+
 import moment from "moment";
 
 const STORAGE_PREFIX = "@durood_";
@@ -70,7 +72,13 @@ const DuroodScreen = () => {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#f3fdfb" }}>
+    <ScrollView
+      style={{
+        flex: 1,
+        backgroundColor: "#f3fdfb",
+        paddingTop: StatusBar.currentHeight || 40,
+      }}
+    >
       <View style={styles.container}>
         <Text style={styles.subtext}>🕌 Daily Durood Counter</Text>
         <Text style={styles.intro}>

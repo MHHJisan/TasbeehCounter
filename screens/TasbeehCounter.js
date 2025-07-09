@@ -16,6 +16,7 @@ import {
   useSafeAreaInsets,
   SafeAreaView,
 } from "react-native-safe-area-context";
+import { StatusBar } from "react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -221,7 +222,14 @@ const TasbeehCounter = () => {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#eef2f3" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#eef2f3",
+        paddingTop: StatusBar.currentHeight || 40,
+      }}
+    >
+      {/* style={{}} */}
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}

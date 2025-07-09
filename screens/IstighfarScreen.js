@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StatusBar } from "react-native";
+
 import moment from "moment";
 import istighfarData from "../data/istigfhar/istigfhar.json";
 
@@ -72,7 +74,13 @@ const IstighfarScreen = () => {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#eef2f3" }}>
+    <ScrollView
+      style={{
+        flex: 1,
+        backgroundColor: "#eef2f3",
+        paddingTop: StatusBar.currentHeight || 40,
+      }}
+    >
       <View style={styles.container}>
         <Text style={styles.subtext}>🤲 Daily Istighfar Counter</Text>
 
