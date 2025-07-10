@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "react-native";
-
 import moment from "moment";
 import istighfarData from "../data/istigfhar/istigfhar.json";
 
@@ -31,14 +30,11 @@ const IstighfarScreen = () => {
     loadWeeklyHistory();
   }, []);
 
-  useEffect(() => {
-    saveTodayCount();
-  }, [count]);
-
   const loadTodayCount = async () => {
-    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + today);
-    if (savedCount !== null) {
-      setCount(parseInt(savedCount));
+    const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+    if (savedData !== null) {
+      const parsed = JSON.parse(savedData);
+      setCount(parsed.total || 0);
     } else {
       setCount(0);
     }
@@ -46,26 +42,61 @@ const IstighfarScreen = () => {
 
   const loadYesterdayCount = async () => {
     const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
-    const savedCount = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
-    setYesterdayCount(savedCount ? parseInt(savedCount) : 0);
+    const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
+    if (savedData !== null) {
+      const parsed = JSON.parse(savedData);
+      setYesterdayCount(parsed.total || 0);
+    } else {
+      setYesterdayCount(0);
+    }
   };
 
-  const saveTodayCount = async () => {
-    await AsyncStorage.setItem(STORAGE_PREFIX + today, count.toString());
+  const saveCountToStorage = async (updatedCount, index) => {
+    const existingData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+    let parsed = existingData
+      ? JSON.parse(existingData)
+      : { total: 0, details: {} };
+
+    parsed.total = updatedCount;
+    parsed.details[index] = (parsed.details[index] || 0) + 1;
+
+    await AsyncStorage.setItem(STORAGE_PREFIX + today, JSON.stringify(parsed));
+  };
+
+  const incrementCount = async () => {
+    const updatedCount = count + 1;
+    setCount(updatedCount);
+
+    await saveCountToStorage(updatedCount, selectedIndex);
+
+    // Optionally reload today's count to sync state exactly with storage
+    await loadTodayCount();
+
+    if (showSummary) {
+      await loadWeeklyHistory();
+    }
   };
 
   const loadWeeklyHistory = async () => {
     const last7Days = [];
+
     for (let i = 6; i >= 0; i--) {
       const date = moment().subtract(i, "days").format("YYYY-MM-DD");
       const stored = await AsyncStorage.getItem(STORAGE_PREFIX + date);
-      last7Days.push({ date, count: stored ? parseInt(stored) : 0 });
-    }
-    setHistory(last7Days);
-  };
 
-  const incrementCount = () => {
-    setCount((prev) => prev + 1);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        last7Days.push({
+          date,
+          total: parsed.total || 0,
+          details: parsed.details || {},
+        });
+      } else {
+        last7Days.push({ date, total: 0, details: {} });
+      }
+    }
+
+    setHistory(last7Days);
   };
 
   const toggleSummary = () => {
@@ -132,9 +163,19 @@ const IstighfarScreen = () => {
           <View style={styles.summaryBox}>
             <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
             {history.map((entry) => (
-              <Text key={entry.date} style={styles.historyEntry}>
-                {moment(entry.date).format("ddd, MMM D")}: {entry.count}
-              </Text>
+              <View key={entry.date} style={{ marginBottom: 10 }}>
+                <Text style={styles.historyEntry}>
+                  {moment(entry.date).format("ddd, MMM D")}: {entry.total} total
+                </Text>
+                {Object.entries(entry.details).map(([index, val]) => (
+                  <Text
+                    key={index}
+                    style={[styles.historyEntry, { paddingLeft: 12 }]}
+                  >
+                    • Istighfar {parseInt(index) + 1}: {val}
+                  </Text>
+                ))}
+              </View>
             ))}
           </View>
         )}
