@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "react-native";
@@ -14,12 +16,24 @@ import istighfarData from "../data/istigfhar/istigfhar.json";
 const STORAGE_PREFIX = "@istighfar_";
 const ISTIGHFAR_DATA = istighfarData;
 
+// Helper function to migrate old storage format
+const migrateStorageData = (data) => {
+  if (typeof data === "number") {
+    return { total: data, details: {} };
+  }
+  return {
+    total: data.total || 0,
+    details: data.details || {},
+  };
+};
+
 const IstighfarScreen = () => {
   const [count, setCount] = useState(0);
   const [yesterdayCount, setYesterdayCount] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const today = moment().format("YYYY-MM-DD");
   const selectedIstighfar = ISTIGHFAR_DATA[selectedIndex];
@@ -27,81 +41,109 @@ const IstighfarScreen = () => {
   useEffect(() => {
     loadTodayCount();
     loadYesterdayCount();
-    loadWeeklyHistory();
   }, []);
 
   const loadTodayCount = async () => {
-    const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
-    if (savedData !== null) {
-      const parsed = JSON.parse(savedData);
-      setCount(parsed.total || 0);
-    } else {
+    try {
+      const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+      if (savedData !== null) {
+        const parsed = JSON.parse(savedData);
+        const migrated = migrateStorageData(parsed);
+        setCount(migrated.total);
+      } else {
+        setCount(0);
+      }
+    } catch (error) {
+      console.error("Failed to load today's count:", error);
       setCount(0);
     }
   };
 
   const loadYesterdayCount = async () => {
-    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
-    const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
-    if (savedData !== null) {
-      const parsed = JSON.parse(savedData);
-      setYesterdayCount(parsed.total || 0);
-    } else {
+    try {
+      const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
+      const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + yesterday);
+      if (savedData !== null) {
+        const parsed = JSON.parse(savedData);
+        const migrated = migrateStorageData(parsed);
+        setYesterdayCount(migrated.total);
+      } else {
+        setYesterdayCount(0);
+      }
+    } catch (error) {
+      console.error("Failed to load yesterday's count:", error);
       setYesterdayCount(0);
     }
   };
 
-  const saveCountToStorage = async (updatedCount, index) => {
-    const existingData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
-    let parsed = existingData
-      ? JSON.parse(existingData)
-      : { total: 0, details: {} };
+  const saveCountToStorage = async (newCount, index) => {
+    try {
+      const key = STORAGE_PREFIX + today;
+      const existingData = await AsyncStorage.getItem(key);
 
-    parsed.total = updatedCount;
-    parsed.details[index] = (parsed.details[index] || 0) + 1;
+      let data;
+      if (existingData) {
+        const parsed = JSON.parse(existingData);
+        data = migrateStorageData(parsed);
+      } else {
+        data = { total: 0, details: {} };
+      }
 
-    await AsyncStorage.setItem(STORAGE_PREFIX + today, JSON.stringify(parsed));
+      data.total = newCount;
+      data.details[index] = (data.details[index] || 0) + 1;
+
+      await AsyncStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error("Failed to save count:", error);
+    }
   };
 
   const incrementCount = async () => {
-    const updatedCount = count + 1;
-    setCount(updatedCount);
+    const newCount = count + 1;
+    setCount(newCount);
+    await saveCountToStorage(newCount, selectedIndex);
 
-    await saveCountToStorage(updatedCount, selectedIndex);
-
-    // Optionally reload today's count to sync state exactly with storage
-    await loadTodayCount();
-
+    // Refresh weekly history if summary is visible
     if (showSummary) {
       await loadWeeklyHistory();
     }
   };
 
   const loadWeeklyHistory = async () => {
-    const last7Days = [];
+    setRefreshing(true);
+    try {
+      const last7Days = [];
 
-    for (let i = 6; i >= 0; i--) {
-      const date = moment().subtract(i, "days").format("YYYY-MM-DD");
-      const stored = await AsyncStorage.getItem(STORAGE_PREFIX + date);
+      for (let i = 6; i >= 0; i--) {
+        const date = moment().subtract(i, "days").format("YYYY-MM-DD");
+        const stored = await AsyncStorage.getItem(STORAGE_PREFIX + date);
 
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        last7Days.push({
-          date,
-          total: parsed.total || 0,
-          details: parsed.details || {},
-        });
-      } else {
-        last7Days.push({ date, total: 0, details: {} });
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const migrated = migrateStorageData(parsed);
+          last7Days.push({
+            date,
+            total: migrated.total,
+            details: migrated.details,
+          });
+        } else {
+          last7Days.push({ date, total: 0, details: {} });
+        }
       }
-    }
 
-    setHistory(last7Days);
+      setHistory(last7Days);
+    } catch (error) {
+      console.error("Failed to load weekly history:", error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  const toggleSummary = () => {
-    if (!showSummary) loadWeeklyHistory();
-    setShowSummary((prev) => !prev);
+  const toggleSummary = async () => {
+    if (!showSummary) {
+      await loadWeeklyHistory();
+    }
+    setShowSummary(!showSummary);
   };
 
   return (
@@ -111,6 +153,13 @@ const IstighfarScreen = () => {
         backgroundColor: "#eef2f3",
         paddingTop: StatusBar.currentHeight || 40,
       }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={loadWeeklyHistory}
+          tintColor="#0284c7"
+        />
+      }
     >
       <View style={styles.container}>
         <Text style={styles.subtext}>🤲 Daily Istighfar Counter</Text>
@@ -123,8 +172,19 @@ const IstighfarScreen = () => {
           <Text style={styles.meaning}>{selectedIstighfar.meaning}</Text>
         </ScrollView>
 
-        <TouchableOpacity onPress={incrementCount} style={styles.counterButton}>
+        <TouchableOpacity
+          onPress={incrementCount}
+          style={styles.counterButton}
+          disabled={refreshing}
+        >
           <Text style={styles.counterText}>{count}</Text>
+          {refreshing && (
+            <ActivityIndicator
+              size="small"
+              color="#fff"
+              style={styles.refreshIndicator}
+            />
+          )}
         </TouchableOpacity>
 
         <Text style={styles.yesterdayText}>
@@ -140,6 +200,7 @@ const IstighfarScreen = () => {
                 selectedIndex === index && styles.istighfarButtonActive,
               ]}
               onPress={() => setSelectedIndex(index)}
+              disabled={refreshing}
             >
               <Text
                 style={[
@@ -153,7 +214,11 @@ const IstighfarScreen = () => {
           ))}
         </View>
 
-        <TouchableOpacity onPress={toggleSummary} style={styles.summaryButton}>
+        <TouchableOpacity
+          onPress={toggleSummary}
+          style={styles.summaryButton}
+          disabled={refreshing}
+        >
           <Text style={styles.summaryButtonText}>
             {showSummary ? "Hide Summary" : "📊 Show Weekly Summary"}
           </Text>
@@ -161,7 +226,16 @@ const IstighfarScreen = () => {
 
         {showSummary && (
           <View style={styles.summaryBox}>
-            <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
+              <TouchableOpacity
+                onPress={loadWeeklyHistory}
+                style={styles.refreshButton}
+              >
+                <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
+              </TouchableOpacity>
+            </View>
+
             {history.map((entry) => (
               <View key={entry.date} style={{ marginBottom: 10 }}>
                 <Text style={styles.historyEntry}>
@@ -249,11 +323,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    position: "relative",
   },
   counterText: {
     fontSize: 50,
     fontWeight: "bold",
     color: "#fff",
+  },
+  refreshIndicator: {
+    position: "absolute",
+    top: 10,
+    right: 10,
   },
   yesterdayText: {
     fontSize: 14,
@@ -307,12 +387,26 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 20,
   },
+  summaryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   summaryTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#1e3a8a",
-    marginBottom: 10,
-    textAlign: "center",
+  },
+  refreshButton: {
+    backgroundColor: "#0284c7",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  refreshButtonText: {
+    color: "#fff",
+    fontSize: 12,
   },
   historyEntry: {
     fontSize: 14,
