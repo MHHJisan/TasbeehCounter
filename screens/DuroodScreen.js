@@ -283,17 +283,7 @@ const styles = StyleSheet.create({
     fontFamily: "serif",
     marginBottom: 10,
   },
-  // subtext: {
-  //   fontSize: 22,
-  //   fontWeight: "800",
-  //   color: "#0f5132",
-  //   backgroundColor: "#d1fae5",
-  //   paddingVertical: 10,
-  //   paddingHorizontal: 25,
-  //   borderRadius: 20,
-  //   marginBottom: 10,
-  //   textAlign: "center",
-  // },
+
   intro: {
     fontSize: 16,
     color: "#444",
