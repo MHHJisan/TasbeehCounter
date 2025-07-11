@@ -148,13 +148,15 @@ const DuroodScreen = () => {
       }}
     >
       <View style={styles.container}>
-        <Text style={styles.subtext}>🕌 Daily Durood Counter</Text>
+        <View style={styles.header}>
+          <View style={styles.headerDecoration} />
+          <Text style={styles.headerText}>Daily Durood Counter</Text>
+          <View style={styles.headerDecoration} />
+        </View>{" "}
         <Text style={styles.intro}>
           Send more and more Salawat upon the Prophet ﷺ
         </Text>
-
-        <Text style={styles.header}>{selectedDurood}</Text>
-
+        <Text style={styles.duroodArea}>{selectedDurood}</Text>
         <View style={styles.mainRow}>
           <TouchableOpacity
             onPress={incrementCount}
@@ -185,7 +187,6 @@ const DuroodScreen = () => {
             ))}
           </View>
         </View>
-
         <View style={styles.breakdownContainer}>
           <Text style={styles.breakdownTitle}>Today's Breakdown:</Text>
           {DUROOD_OPTIONS.map((item, index) => (
@@ -197,17 +198,14 @@ const DuroodScreen = () => {
             </View>
           ))}
         </View>
-
         <Text style={styles.yesterdayText}>
           📆 Yesterday's Count: {yesterdayCount}
         </Text>
-
         <TouchableOpacity onPress={toggleSummary} style={styles.summaryButton}>
           <Text style={styles.summaryButtonText}>
             {showSummary ? "Hide Summary" : "📊 Show Weekly Summary"}
           </Text>
         </TouchableOpacity>
-
         {showSummary && (
           <View style={styles.summaryBox}>
             <Text style={styles.summaryTitle}>📅 Weekly Summary</Text>
@@ -230,7 +228,6 @@ const DuroodScreen = () => {
             ))}
           </View>
         )}
-
         <Text style={styles.note}>
           ✨ This counter resets at midnight (12:00 AM). Keep sending blessings
           upon the Prophet
@@ -246,23 +243,57 @@ export default DuroodScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f3fdfb",
+    // backgroundColor: "#f3fdfb",
     alignItems: "center",
-    paddingTop: 40,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    // paddingTop: 40,
+    // paddingHorizontal: 20,
+    // paddingBottom: 40,
   },
-  subtext: {
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#5d4037",
+    paddingTop: StatusBar.currentHeight || 40,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    width: "100%",
+    marginBottom: 20,
+  },
+  headerDecoration: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#d7ccc8",
+    borderRadius: 2,
+    marginHorizontal: 10,
+  },
+  headerText: {
     fontSize: 22,
-    fontWeight: "800",
-    color: "#0f5132",
-    backgroundColor: "#d1fae5",
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-    marginBottom: 10,
+    fontWeight: "700",
+    color: "#fff",
     textAlign: "center",
+    letterSpacing: 1,
+    fontFamily: "serif",
+    marginBottom: 10,
   },
+  // subtext: {
+  //   fontSize: 22,
+  //   fontWeight: "800",
+  //   color: "#0f5132",
+  //   backgroundColor: "#d1fae5",
+  //   paddingVertical: 10,
+  //   paddingHorizontal: 25,
+  //   borderRadius: 20,
+  //   marginBottom: 10,
+  //   textAlign: "center",
+  // },
   intro: {
     fontSize: 16,
     color: "#444",
@@ -270,7 +301,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontStyle: "italic",
   },
-  header: {
+  duroodArea: {
     fontSize: 20,
     fontWeight: "700",
     color: "#065f46",
