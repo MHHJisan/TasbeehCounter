@@ -1,52 +1,50 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Vibration,
-} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, ActivityIndicator, Vibration } from "react-native";
 import { Audio } from "expo-av";
 
 const RecorderUploader = ({ onTranscription }) => {
-  const [recording, setRecording] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-
   const recordingRef = useRef(null);
 
-  const startRecording = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+  useEffect(() => {
+    const start = async () => {
+      try {
+        await Audio.requestPermissionsAsync();
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
 
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      await rec.startAsync();
-      recordingRef.current = rec;
-      setRecording(true);
-    } catch (err) {
-      console.error("Recording failed:", err);
-    }
-  };
+        const rec = new Audio.Recording();
+        await rec.prepareToRecordAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        await rec.startAsync();
+        recordingRef.current = rec;
+      } catch (err) {
+        console.error("Recording failed:", err);
+      }
+    };
 
-  const stopRecording = async () => {
-    try {
-      const rec = recordingRef.current;
-      if (!rec) return;
+    start();
 
-      await rec.stopAndUnloadAsync();
-      const uri = rec.getURI();
-      setRecording(null);
-      await uploadAudio(uri);
-    } catch (err) {
-      console.error("Stop recording error:", err);
-    }
-  };
+    return () => {
+      const stop = async () => {
+        try {
+          const rec = recordingRef.current;
+          if (!rec) return;
+
+          await rec.stopAndUnloadAsync();
+          const uri = rec.getURI();
+          await uploadAudio(uri);
+        } catch (err) {
+          console.error("Stop recording error:", err);
+        }
+      };
+
+      stop();
+    };
+  }, []);
 
   const uploadAudio = async (uri) => {
     try {
@@ -58,7 +56,7 @@ const RecorderUploader = ({ onTranscription }) => {
         type: "audio/wav",
       });
 
-      const response = await fetch("http://<YOUR-IP>:8000/transcribe", {
+      const response = await fetch("http://192.168.0.103:8000/transcribe", {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -79,27 +77,7 @@ const RecorderUploader = ({ onTranscription }) => {
 
   return (
     <View style={{ marginTop: 20, alignItems: "center" }}>
-      {recording ? (
-        <TouchableOpacity
-          onPress={stopRecording}
-          style={{ backgroundColor: "#dc2626", padding: 10, borderRadius: 8 }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            🛑 Stop & Transcribe
-          </Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          onPress={startRecording}
-          style={{ backgroundColor: "#22c55e", padding: 10, borderRadius: 8 }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            🎤 Start Recording
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {isUploading && <ActivityIndicator style={{ marginTop: 10 }} />}
+      {isUploading && <ActivityIndicator />}
     </View>
   );
 };

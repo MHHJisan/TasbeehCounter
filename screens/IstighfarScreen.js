@@ -1,5 +1,5 @@
 // IstighfarScreen.js
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,22 +8,17 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  Platform,
-  Vibration,
+  StatusBar,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { StatusBar } from "react-native";
 import moment from "moment";
-import { Audio } from "expo-av";
 
 import RecorderUploader from "../components/RecorderUploader";
-
 import istighfarData from "../data/istigfhar/istigfhar.json";
 
 const STORAGE_PREFIX = "@istighfar_";
 const ISTIGHFAR_DATA = istighfarData;
 
-// Helper function to migrate old storage format
 const migrateStorageData = (data) => {
   if (typeof data === "number") {
     return { total: data, details: {} };
@@ -43,10 +38,6 @@ const IstighfarScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("🎤 Tap to enable voice");
-  const [audioPermission, setAudioPermission] = useState(false);
-
-  const recordingRef = useRef(null);
-  const soundRef = useRef(null);
 
   const today = moment().format("YYYY-MM-DD");
   const selectedIstighfar = ISTIGHFAR_DATA[selectedIndex];
@@ -54,38 +45,16 @@ const IstighfarScreen = () => {
   useEffect(() => {
     loadTodayCount();
     loadYesterdayCount();
-    requestPermissions();
-
-    return () => {
-      stopRecording();
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
-    };
-  }, []);
-
-  const requestPermissions = async () => {
-    try {
-      const permission = await Audio.requestPermissionsAsync();
-      setAudioPermission(permission.granted);
-      if (!permission.granted) {
-        setVoiceStatus("❌ Microphone permission required");
-      }
-      return permission.granted;
-    } catch (error) {
-      console.error("Permission error:", error);
-      setVoiceStatus("❌ Permission error");
-      return false;
-    }
-  };
+  }, [selectedIndex]);
 
   const loadTodayCount = async () => {
     try {
-      const savedData = await AsyncStorage.getItem(STORAGE_PREFIX + today);
+      const key = STORAGE_PREFIX + today;
+      const savedData = await AsyncStorage.getItem(key);
       if (savedData !== null) {
         const parsed = JSON.parse(savedData);
         const migrated = migrateStorageData(parsed);
-        setCount(migrated.total);
+        setCount(migrated.details[selectedIndex] || 0);
       } else {
         setCount(0);
       }
@@ -125,8 +94,13 @@ const IstighfarScreen = () => {
         data = { total: 0, details: {} };
       }
 
-      data.total = newCount;
-      data.details[index] = (data.details[index] || 0) + 1;
+      data.details[index] = newCount;
+
+      // Update total count by summing all details counts
+      data.total = Object.values(data.details).reduce(
+        (acc, val) => acc + val,
+        0
+      );
 
       await AsyncStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
@@ -181,108 +155,13 @@ const IstighfarScreen = () => {
     setShowSummary(!showSummary);
   };
 
-  const startRecording = async () => {
-    if (!audioPermission) {
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) return;
-    }
-
-    try {
-      setVoiceStatus("🔊 Listening...");
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
-
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      await recording.startAsync();
-      recordingRef.current = recording;
-    } catch (error) {
-      console.error("Failed to start recording:", error);
-      setVoiceStatus("❌ Error - Tap to retry");
-      setIsListening(false);
-    }
-  };
-
-  const stopRecording = async () => {
-    try {
-      if (recordingRef.current) {
-        await recordingRef.current.stopAndUnloadAsync();
-        const uri = recordingRef.current.getURI();
-        if (uri) {
-          await processAudio(uri);
-        }
-        recordingRef.current = null;
-      }
-    } catch (error) {
-      console.error("Failed to stop recording:", error);
-    } finally {
-      setIsListening(false);
-    }
-  };
-
-  const processAudio = async (uri) => {
-    try {
-      await playSound();
-      simulateRecognition();
-
-      // 🔁 Continue listening
-      if (isListening) {
-        await startRecording();
-      }
-    } catch (error) {
-      console.error("Audio processing failed:", error);
-      setVoiceStatus("❌ Processing error");
-    }
-  };
-
-  const playSound = async () => {
-    try {
-      Vibration.vibrate(50);
-      const { sound } = await Audio.Sound.createAsync(
-        require("../assets/blast-sound.mp3")
-      );
-      soundRef.current = sound;
-      await sound.playAsync();
-    } catch (error) {
-      console.log("Sound error:", error);
-    }
-  };
-
-  const simulateRecognition = () => {
-    const phrases = [
-      "astaghfirullah",
-      "astaghfirullah al azim",
-      "astaghfirullah rabbi wa atubu ilaih",
-      "astaghfir",
-      "allah",
-    ];
-
-    if (Math.random() > 0.15) {
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      handleVoiceRecognition(randomPhrase);
-    }
-  };
-
-  const handleVoiceRecognition = (text) => {
-    if (text.toLowerCase().includes("astaghfir")) {
-      incrementCount();
-    }
-  };
-
-  const toggleVoiceRecognition = async () => {
+  const toggleVoiceRecognition = () => {
     if (isListening) {
-      await stopRecording();
+      setIsListening(false);
       setVoiceStatus("🎤 Tap to enable voice");
     } else {
       setIsListening(true);
       setVoiceStatus("🎙️ Listening... Tap to stop");
-      await startRecording();
     }
   };
 
@@ -302,7 +181,12 @@ const IstighfarScreen = () => {
       }
     >
       <View style={styles.container}>
-        <Text style={styles.subtext}>🤲 Daily Istighfar Counter</Text>
+        {/* <Text style={styles.subtext}>Daily Istighfar Counter</Text> */}
+        <View style={styles.header}>
+          <View style={styles.headerDecoration} />
+          <Text style={styles.headerText}>Daily Istighfar Counter</Text>
+          <View style={styles.headerDecoration} />
+        </View>
 
         <ScrollView style={styles.duaBox}>
           <Text style={styles.arabic}>{selectedIstighfar.arabic}</Text>
@@ -319,6 +203,17 @@ const IstighfarScreen = () => {
         >
           <Text style={styles.counterText}>{count}</Text>
         </TouchableOpacity>
+
+        {/* RecorderUploader mounted only when isListening is true */}
+        {isListening && (
+          <RecorderUploader
+            onTranscription={(text) => {
+              if (text.toLowerCase().includes("astaghfir")) {
+                incrementCount();
+              }
+            }}
+          />
+        )}
 
         <TouchableOpacity
           onPress={toggleVoiceRecognition}
@@ -412,21 +307,55 @@ export default IstighfarScreen;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    // padding: 20,
     alignItems: "center",
-    paddingBottom: 40,
+    // paddingBottom: 40,
   },
-  subtext: {
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#5d4037",
+    paddingTop: StatusBar.currentHeight || 40,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    width: "100%",
+    marginBottom: 20,
+  },
+  headerDecoration: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#d7ccc8",
+    borderRadius: 2,
+    marginHorizontal: 10,
+  },
+  headerText: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1e3a8a",
-    backgroundColor: "#dbeafe",
-    paddingVertical: 8,
-    paddingHorizontal: 25,
-    borderRadius: 14,
-    marginBottom: 20,
+    color: "#fff",
     textAlign: "center",
+    letterSpacing: 1,
+    fontFamily: "serif",
+    marginBottom: 10,
   },
+  // subtext: {
+  //   fontSize: 22,
+  //   fontWeight: "700",
+  //   color: "#1e3a8a",
+  //   backgroundColor: "#dbeafe",
+  //   paddingVertical: 8,
+  //   paddingHorizontal: 25,
+  //   borderRadius: 14,
+  //   marginBottom: 20,
+  //   textAlign: "center",
+  // },
   duaBox: {
     maxHeight: 210,
     width: "100%",
@@ -482,11 +411,6 @@ const styles = StyleSheet.create({
     fontSize: 50,
     fontWeight: "bold",
     color: "#fff",
-  },
-  refreshIndicator: {
-    position: "absolute",
-    top: 10,
-    right: 10,
   },
   yesterdayText: {
     fontSize: 14,
@@ -610,9 +534,8 @@ const styles = StyleSheet.create({
   historyEntry: {
     fontSize: 14,
     color: "#374151",
-    paddingVertical: 2,
-    textAlign: "left",
   },
+
   note: {
     marginTop: 15,
     fontSize: 13,
